@@ -8,20 +8,6 @@ const planets = require('./planets.mongo')
 const DEFAULT_FLIGHT_NUMBER = 100
 // let lastestFlightNumber = 100
 
-const launch = {
-    flightNumber: 100,                          // flight_number
-    mission: 'KeplerExoplanets',                // name
-    rocket: 'Explorer IS1',                     // rocket.name
-    launchDate: new Date('December 27, 2030'),  // date_local
-    target: 'Kepler-442 b',                     // no aplica
-    customers: ['NASA', 'ZTM'],                 // payload.customers for each payload
-    upcoming: true,                             // upcoming
-    success: true,                              // success
-}
-
-saveLaunch(launch)
-// launches.set(launch.flightNumber, launch);
-
 const SPACEX_API_URL = 'https://api.spacexdata.com/v4/launches/query'
 
 async function populateLaunches(){
@@ -46,7 +32,12 @@ async function populateLaunches(){
                 }
             ]
         }
-    })
+    });
+
+    if ( response.status !== 200 ) {
+        console.log('Problem downloading launch data');
+        throw new Error('Launch data download failed')
+    }
 
     const launchDocs = response.data.docs;
     for (const launchDoc of launchDocs) {
@@ -110,9 +101,13 @@ async function existLaunchWithId(launchId){
     })
 }
 
-async function getAllLaunches() {
+async function getAllLaunches(skip,limit) {
     // return Array.from(launches.values())
-    return await launchesDB.find({},{ '__id': 0, '__v': 0 })
+    return await launchesDB
+        .find({},{ '__id': 0, '__v': 0 })
+        .sort({ flightNumber: 1 })
+        .skip(skip)
+        .limit(limit);
 }
 
 async function saveLaunch(launch) {
